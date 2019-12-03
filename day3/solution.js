@@ -1,96 +1,74 @@
 const input = require('./testinput.json');
+const fs = require('fs');
+
+const realInput = fs.readFileSync('./input.txt', { encoding: 'utf8' });
+//input.push({ input: realInput, result: "x" })
 
 function translateInputString(inputString) {
     return inputString.split("\n").map((line) =>
         line.split(",").map((instruction) => {
-            const spInst = instruction.split("");
-            const direction = spInst.shift();
-            const length = parseInt(spInst.join());
-            return {direction, length}
+            const regexes = instruction.match(/(.)(\d*)/);
+            return {direction: regexes[1], length: parseInt(regexes[2])}
         }))
 }
 
-function setGrid(grid, {x, y}) {
-    const portx = Math.round(x/2);
-    const porty = Math.round(y/2);
-    for(let i = 0; i < y; i++) {
-        grid[i] = new Array(x);
-    }
-
-    grid[porty][portx] = "o";
-
-    return {grid, portx, porty};
-}
-
-function getGridSizeRequirement(input) {
-    return input.reduce((acc, line) => acc.concat(line), []).reduce((acc, {direction, length}) => {
-        switch(direction) {
-            case "U": case "D": acc.y += length; break;
-            case "R": case "L": acc.x += length; break;
-        }
-        return acc;
-    }, {x: 0, y: 0});
-}
-
-function drawYLength(grid, from, to, x) {
-    for(let i = from; i <= to; i++) {
-        grid[i][x] = "|";
-    }
-}
-
-function drawXLength(grid, from, to, y) {
-    for(let i = from; i <= to; i++) {
-        grid[y][i] = "-";
-    }
-}
-
-function drawInstruction(grid, currentX, currentY, {direction, length}) {
+function getCoordsAndCurrentPosition(initX, initY, {direction, length}) {
     switch(direction) {
-        case "U": drawYLength(grid, currentY, currentY+length, currentX); break;
-        case "D": drawYLength(grid, currentY-length, currentY, currentX); break;
-        case "R": drawXLength(grid, currentX, currentX+length, currentY); break;
-        case "L": drawXLength(grid, currentX-length, currentX, currentY); break;
+        case "U": return { from: initY, to: initY + length, y: initY + length, x: initX}
+        case "D": return { from: initY - length, to: initY, y: initY - length, x: initX}
+        case "R": return { from: initX, to: initX + length, y: initY, x: initX + length}
+        case "L": return { from: initX - length, to: initX, y: initY, x: initX - length}
     }
 }
 
-function getNewCurrentXY(currentX, currentY, {direction, length}) {
-    switch(direction) {
-        case "U": return { y: currentY+length, x: currentX };
-        case "D": return { y: currentY-length, x: currentX };
-        case "R": return { y: currentY, x: currentX+length };
-        case "L": return { y: currentY, x: currentX-length };
-        default: throw new Error(`Unknown instruction ${direction} of length ${length}`);
-    }
+function getXCoords(from, to, y) {
+    const coords = [];
+    for(let i = from; i <= to; i++) coords.push(`${i},${y}`);
+    return coords;
 }
 
-function drawInstructions(grid, portX, portY, instructions) {
-    let currentX = portX;
-    let currentY = portY;
+function getYCoords(from, to, x) {
+    const coords = [];
+    for(let i = from; i <= to; i++) coords.push(`${x},${i}`);
+    return coords;
+}
 
-    while(instructions.length > 0) {
-        let instruction = instructions.shift();
-        drawInstruction(grid, currentX, currentY, instruction);
-        let {x, y} = getNewCurrentXY(currentX, currentY, instruction);
-        currentX = x;
-        currentY = y;
-    }
-} 
+function getAllCoords(instructionLine) {
+    let curX = 0;
+    let curY = 0;
 
-function printGrid(grid) {
-    for(let i = 0; i < grid.length; i++) {
-        let row = "";
-        for(let j = 0; j < grid[i].length; j++) {
-            row += grid[i][j] === null || grid[i][j] === undefined ? "." : grid[i][j];
+    return instructionLine.map((instruction) => {
+        const {from, to, y, x} = getCoordsAndCurrentPosition(curX, curY, instruction);
+        curX = x;
+        curY = y;
+        switch(instruction.direction) {
+            case "U": case "D": return getYCoords(from, to, x);
+            case "R": case "L": return getXCoords(from, to, y);
         }
-        console.log(row);
-    }
+    }).reduce((acc, curr) => acc.concat(curr));
 }
 
+function getLowestCollision(collisions) {
+    let manhattans = collisions.map((coll) => {
+        const match = coll.match(/(-?\d*),(-?\d*)/);
+        const [ _, x, y ] = match;
+        return Math.abs(parseInt(x)) + Math.abs(parseInt(y));
+    }).sort((a, b) => parseInt(a) > parseInt(b));
+    return { manhattans, lowest: manhattans[0] }
+}
 
-const inp = translateInputString(input[0].input);
-const req = getGridSizeRequirement(inp);
-const {grid, portx, porty} = setGrid([], req);
-console.log(inp, req, portx, porty);
-printGrid(grid);
-inp.forEach((instLine) => drawInstructions(grid, portx, porty, instLine));
-printGrid(grid);
+function doInstructionSet({input, result}) {
+    const parsedInput = translateInputString(input);
+    const coords = getAllCoords(parsedInput[0]);
+    const coords2 = getAllCoords(parsedInput[1]);
+    coords.shift();
+    coords2.shift();
+    const collisions = coords.filter((coord) => -1 !== coords2.indexOf(coord));//getCollisions(parsedInput[1], coords);
+    const {manhattans, lowest} = getLowestCollision(collisions);
+    //console.log(coords);
+    console.log(collisions);
+    console.log(manhattans);
+    console.log(`${result} ? => ${lowest}`);
+}
+
+input.forEach(doInstructionSet);
