@@ -1,0 +1,3 @@
+[
+    { "input": "R8,U5,L5,D3\nU7,R6,D4,L4", "result": 6 }
+]
