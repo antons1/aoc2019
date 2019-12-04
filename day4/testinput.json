@@ -1,0 +1,8 @@
+[
+    { "input": "111111", "result": false },
+    { "input": "223450", "result": false },
+    { "input": "123789", "result": false },
+    { "input": "112233", "result": true },
+    { "input": "123444", "result": false },
+    { "input": "111122", "result": true }
+]
