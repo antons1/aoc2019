@@ -32,55 +32,6 @@ function checkLosPattern(map, xJump, yJump, xFrom, yFrom) {
     else return checkLosPattern(map, xJump, yJump, xFrom + xJump, yFrom + yJump);
 }
 
-function vaporizeAsteroidAtLos(map, xJump, yJump, xFrom, yFrom) {
-    //console.log("Checking", xFrom + xJump, yFrom + yJump)
-    if(map.length-1 < yFrom + yJump || map[0].length-1 < xFrom + xJump || yFrom + yJump < 0 || xFrom + xJump < 0) return 0;
-    else if(map[yFrom + yJump][xFrom + xJump] === "#") {
-        //console.log("Detected sight at", xFrom + xJump, yFrom + yJump, "checking pattern", xJump, yJump);
-        map[yFrom + yJump][xFrom + xJump] = ".";
-        return {dy: yFrom + yJump, dx: xFrom + xJump, val: 1 };
-    } else return {dy: yFrom + yJump, dx: xFrom + xJump, val: 1 };
-}
-
-function vaporizeArea(map, fromX, fromY, toX, toY, pointX, pointY) {
-    let loses = 0;
-    let checkedDiffs = {};
-
-    for(let y = fromY; Math.abs(y) < Math.abs(toY); fromY > toY ? y-- : y++) {
-        for(let x = fromX; Math.abs(x) < Math.abs(toX); fromX > toX ? x-- : x++) {
-            if(y === x && y !== 1) continue;
-            else if(x === 0 && y !== 1) continue;
-            else if(y === 0 && x !== 1) continue;
-            
-            const diff = x/y;
-            if(checkedDiffs[diff]) continue;
-            else checkedDiffs[diff] = true;
-
-            const {dx, dy, val} = vaporizeAsteroidAtLos(map, x, y, pointX, pointY);
-            if(val > 0) {
-                loses++;
-                if(loses === 1) console.log("Deleted 1st at ", dx, dy);
-            }
-        }
-    }
-
-    return loses;
-}
-
-function vaporizeAsteroids(map, pointX, pointY) {
-    const xMax = map[0].length;
-    const yMax = map.length;
-    let loses = 0;
-    let checkedDiffs = {};
-
-    loses += vaporizeArea(map, 0, 0, xMax, (yMax * -1), pointX, pointY);
-    loses += vaporizeArea(map, 0, 0, xMax, yMax, pointX, pointY);
-    loses += vaporizeArea(map, 0, 0, (xMax * -1), yMax, pointX, pointY);
-    loses += vaporizeArea(map, 0, 0, (xMax * -1), (yMax * -1), pointX, pointY);
-
-    return loses;
-}
-
 function checkLosForPoint(map, pointX, pointY) {
     const xMax = map[0].length;
     const yMax = map.length;
